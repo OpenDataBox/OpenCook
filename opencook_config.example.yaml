@@ -1,0 +1,183 @@
+# OpenCook Configuration Template
+# Copy this file to opencook_config.yaml and fill in your values.
+#
+#   cp opencook_config.example.yaml opencook_config.yaml
+#   opencook interactive --config-file opencook_config.yaml
+#   opencook run "Your task here" --config-file opencook_config.yaml
+#
+# Or set the config path once:
+#   export OPENCOOK_CONFIG_FILE=opencook_config.yaml
+
+# ------------------------------------------------------------
+# Database Configuration
+# ------------------------------------------------------------
+databases:
+    default: sqlite  # Which database to use: postgresql | sqlite | duckdb | clickhouse
+
+    postgresql:
+        port: 5432                              # PostgreSQL listening port
+        install_folder: /path/to/postgresql     # PostgreSQL binary/install directory
+        data_folder: /path/to/postgresql/data   # PostgreSQL data directory (PGDATA)
+        user: your_db_user                      # OS user that owns the PostgreSQL process
+        bash_path: /bin/bash                    # Path to bash used for DB management commands
+        cpu_num: 8                              # Number of CPUs available for parallel tasks
+
+    clickhouse:
+        port: 9000                              # ClickHouse native TCP port
+        install_folder: /path/to/clickhouse     # ClickHouse binary/install directory
+        data_folder: /path/to/clickhouse/data   # ClickHouse data storage directory
+
+    sqlite:
+        install_folder: /path/to/sqlite         # Working directory for SQLite database files
+        cpu_num: 8                              # Number of CPUs available for parallel tasks
+
+    duckdb:
+        install_folder: /path/to/duckdb         # Working directory for DuckDB database files
+
+# ------------------------------------------------------------
+# Skills System
+# ------------------------------------------------------------
+skills:
+    enabled: true                       # Enable/disable the skills system globally
+    # Built-in skills (open-cookbook/) are always loaded automatically.
+    standalone_project_roots:
+        - .opencook/skills              # Per-project skill packages (relative to repo root)
+    standalone_user_roots:
+        - ~/.opencook/skills            # Per-user global skill packages
+    # extra_standalone_paths: []        # Additional root dirs; each child dir is a skill package
+    # extra_standalone_packages: []     # Additional direct skill dirs (each contains SKILL.md)
+    resource_limit: 50                  # Max number of skill resources loaded into context
+
+# ------------------------------------------------------------
+# Agent Configuration
+# ------------------------------------------------------------
+agents:
+    plan_agent:
+        model: plan_agent_model         # Model definition to use; references a key under `models`
+        max_steps: 10                   # Maximum number of agent steps before forced termination
+        run_steps: 0                    # Steps to run automatically before pausing for review (0 = manual)
+        tools:                          # Tools available to this agent
+            - bash
+            - sequentialthinking
+            - task_done
+
+    code_agent:
+        model: code_agent_model         # Model definition to use; references a key under `models`
+        max_steps: 50                   # Maximum number of agent steps before forced termination
+        run_steps: 1                    # Run 1 step automatically, then pause
+        tools:                          # Tools available to this agent
+            - skill
+            - bash
+            - sequentialthinking
+            - str_replace_based_edit_tool
+            - task_done
+            - test_subagent
+            - plan_subagent
+
+    test_agent:
+        model: test_agent_model         # Model definition to use; references a key under `models`
+        max_steps: 10                   # Maximum number of agent steps before forced termination
+        run_steps: 1                    # Run 1 step automatically, then pause
+        tools:                          # Tools available to this agent
+            - sequentialthinking
+            - task_done
+            - database_verify
+            - database_execute
+
+# ------------------------------------------------------------
+# Model Providers
+# Configure at least one provider. Each entry needs an api_key.
+# `provider` selects the client adapter / API format.
+# Common values: anthropic | openai | deepseek | zhipu | qwen | siliconflow | groq | minimax | azure | openrouter | google | ollama
+# ------------------------------------------------------------
+model_providers:
+    # Anthropic (Claude): https://console.anthropic.com/
+    anthropic:
+        api_key: YOUR_ANTHROPIC_API_KEY         # API key from Anthropic Console
+        provider: anthropic                     # Use Anthropic's native API format
+
+    # OpenAI (Responses API — OpenAI-specific, NOT for other vendors): https://platform.openai.com/api-keys
+    openai:
+        base_url: https://api.openai.com/v1     # API base URL
+        api_key: YOUR_OPENAI_API_KEY            # API key from OpenAI platform
+        provider: openai                        # Uses OpenAI Responses API (openai-specific)
+
+    # DeepSeek: https://platform.deepseek.com/
+    deepseek:
+        base_url: https://api.deepseek.com      # DeepSeek API endpoint
+        api_key: YOUR_DEEPSEEK_API_KEY          # API key from DeepSeek platform
+        provider: deepseek                      # Uses standard Chat Completions API
+
+    # Zhipu AI (GLM series): https://open.bigmodel.cn/
+    zhipu:
+        base_url: https://open.bigmodel.cn/api/paas/v4  # Zhipu API endpoint
+        api_key: YOUR_ZHIPU_API_KEY             # API key from Zhipu AI platform
+        provider: zhipu                         # Uses standard Chat Completions API
+
+    # Alibaba DashScope (Qwen series): https://dashscope.aliyun.com/
+    # qwen:
+    #     base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    #     api_key: YOUR_DASHSCOPE_API_KEY       # API key from Alibaba Cloud DashScope
+    #     provider: qwen                        # Uses standard Chat Completions API
+
+    # SiliconFlow (open-source model aggregator): https://siliconflow.cn/
+    # siliconflow:
+    #     base_url: https://api.siliconflow.cn/v1
+    #     api_key: YOUR_SILICONFLOW_API_KEY     # API key from SiliconFlow platform
+    #     provider: siliconflow                 # Uses standard Chat Completions API
+
+    # Groq (ultra-fast inference): https://console.groq.com/
+    # groq:
+    #     base_url: https://api.groq.com/openai/v1
+    #     api_key: YOUR_GROQ_API_KEY            # API key from Groq Console
+    #     provider: groq                        # Uses standard Chat Completions API
+
+    # MiniMax: https://platform.minimaxi.com/
+    # minimax:
+    #     base_url: https://api.minimax.chat/v1 # MiniMax API endpoint
+    #     api_key: YOUR_MINIMAX_API_KEY         # API key from MiniMax platform
+    #     provider: minimax                     # Uses standard Chat Completions API
+
+    # Ollama (local models, no API key required): https://ollama.com/
+    # ollama:
+    #     base_url: http://localhost:11434/v1   # Local Ollama server address (optional)
+    #     api_key: ollama                       # Placeholder; Ollama ignores this value
+    #     provider: ollama                      # Uses the native ollama Python library (not Chat Completions API)
+
+# ------------------------------------------------------------
+# Model Definitions
+# Each entry maps a logical name (used in agent config above)
+# to a specific provider + model.
+# ------------------------------------------------------------
+models:
+    plan_agent_model:
+        model_provider: deepseek        # Must match a key in model_providers above
+        model: deepseek-chat            # Model name string accepted by the provider API
+        # Other examples: claude-opus-4-6 (anthropic), gpt-4o (openai),
+        #                 glm-4-plus (zhipu), qwen3-coder-plus (qwen), llama3 (ollama)
+        max_tokens: 4096                # Maximum tokens in the model's response
+        temperature: 0.4                # Sampling temperature (higher = more creative)
+        top_p: 1                        # Top-p nucleus sampling (1 = disabled)
+        top_k: 0                        # Top-k sampling (0 = disabled)
+        max_retries: 10                 # Number of API retry attempts on transient errors
+        parallel_tool_calls: true       # Allow the model to call multiple tools simultaneously
+
+    code_agent_model:
+        model_provider: deepseek        # Must match a key in model_providers above
+        model: deepseek-chat            # Model name string accepted by the provider API
+        max_tokens: 8192                # Larger budget for code generation tasks
+        temperature: 0.0                # Deterministic output recommended for code generation
+        top_p: 1                        # Top-p nucleus sampling (1 = disabled)
+        top_k: 0                        # Top-k sampling (0 = disabled)
+        max_retries: 10                 # Number of API retry attempts on transient errors
+        parallel_tool_calls: true       # Allow the model to call multiple tools simultaneously
+
+    test_agent_model:
+        model_provider: deepseek        # Must match a key in model_providers above
+        model: deepseek-chat            # Model name string accepted by the provider API
+        max_tokens: 4096                # Maximum tokens in the model's response
+        temperature: 0.0                # Deterministic output recommended for verification tasks
+        top_p: 1                        # Top-p nucleus sampling (1 = disabled)
+        top_k: 0                        # Top-k sampling (0 = disabled)
+        max_retries: 10                 # Number of API retry attempts on transient errors
+        parallel_tool_calls: true       # Allow the model to call multiple tools simultaneously

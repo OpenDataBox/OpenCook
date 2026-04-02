@@ -1,0 +1,41 @@
+# OpenCook runtime dependencies
+# Python >= 3.10 required (uses match statements and TypeAlias)
+# Prefer `pip install -e .` for normal setup.
+# Keep this file in sync with `pyproject.toml` for compatibility workflows.
+
+# LLM API clients
+anthropic
+openai
+google-genai
+
+# MCP protocol
+mcp
+
+# Ollama client
+ollama
+
+# CLI / TUI
+click
+prompt_toolkit
+rich
+textual
+
+# Data processing
+numpy
+pandas
+tqdm
+
+# SQL / code analysis
+sqlglot
+tree-sitter
+tree-sitter-c
+tree-sitter-cpp
+
+# Utilities
+python-dotenv
+pyyaml
+jsonpath-ng
+
+# NOTE: `understand` (SciTools Understand API) is NOT available on PyPI.
+# It is bundled with the commercial SciTools Understand IDE installation.
+# Install Understand separately and ensure its Python API is on PYTHONPATH.

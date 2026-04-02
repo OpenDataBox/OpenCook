@@ -1,0 +1,98 @@
+Screen {
+    background: #060912;
+    color: #e2e8f0;
+}
+
+#header {
+    dock: top;
+    height: 1;
+    background: #060912;
+    color: #00D4FF;
+    padding: 0 1;
+}
+
+#chat_area {
+    height: 1fr;
+    padding: 0 0 0 0;
+    background: #060912;
+    scrollbar-background: #060912;
+    scrollbar-color: #1a2438;
+    scrollbar-color-hover: #3a4560;
+    scrollbar-color-active: #00D4FF;
+    scrollbar-size: 0 0;
+}
+
+#hero {
+    height: auto;
+    background: #060912;
+    color: #e2e8f0;
+    padding: 1 1 0 1;
+}
+
+ChatLog {
+    width: 100%;
+    background: #060912;
+    color: #e2e8f0;
+    padding: 0 1;
+}
+
+#status {
+    height: 1;
+    width: 100%;
+    background: #060912;
+    color: #8896aa;
+    padding: 0 1;
+}
+
+#approval_panel {
+    height: auto;
+    width: 100%;
+    background: #0a1020;
+    border-top: ascii #1a2438;
+    border-bottom: ascii #1a2438;
+    padding: 0 1;
+    display: none;
+}
+
+#approval_panel.visible {
+    display: block;
+}
+
+#cmd_popup {
+    height: auto;
+    max-height: 8;
+    width: 100%;
+    background: #0a1020;
+    color: #e2e8f0;
+    border-top: ascii #1a2438;
+    padding: 0 1;
+    display: none;
+}
+
+#cmd_popup.visible {
+    display: block;
+}
+
+Input {
+    height: 3;
+    border: ascii #1a2438;
+    background: #0a1020;
+    color: #e2e8f0;
+    padding: 0 1;
+}
+
+Input:focus {
+    border: ascii #00D4FF;
+}
+
+Input.deny-mode {
+    border: ascii #EF4444;
+}
+
+#footer {
+    dock: bottom;
+    height: 1;
+    background: #060912;
+    color: #8896aa;
+    padding: 0 1;
+}
