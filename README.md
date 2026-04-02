@@ -1,5 +1,4 @@
-﻿<div align="center">
-  <img src="./data/images/opencook_logo.png" width="140px" alt="OpenCook Logo"/><br/>
+<div align="center">
   <h1>OpenCook</h1>
   <p><b>Project-Specific Personalization for Coding Agents</b></p>
   <p><i>Start with a generic project. End with a perfectly tailored solution.</i></p>
@@ -16,7 +15,6 @@
 </div>
 
 <div align="center">
-
   <a href="#-news">News</a> &nbsp;•&nbsp;
   <a href="#-introduction">Introduction</a> &nbsp;•&nbsp;
   <a href="#-demo">Demo</a> &nbsp;•&nbsp;
