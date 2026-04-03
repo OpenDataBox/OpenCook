@@ -1,4 +1,5 @@
 <div align="center">
+  <img src="./data/images/opencook_logo.png" width="140px" alt="OpenCook Logo"/><br/>
   <h1>OpenCook</h1>
   <p><b>Project-Specific Personalization for Coding Agents</b></p>
   <p><i>Start with a generic project. End with a perfectly tailored solution.</i></p>
@@ -15,6 +16,7 @@
 </div>
 
 <div align="center">
+
   <a href="#-news">News</a> &nbsp;•&nbsp;
   <a href="#-introduction">Introduction</a> &nbsp;•&nbsp;
   <a href="#-demo">Demo</a> &nbsp;•&nbsp;
@@ -30,61 +32,76 @@
 <div align="center">
   <b>English</b> &nbsp;|&nbsp; 简体中文
   <br/><br/>
-  <b>⭐ Star us on GitHub — it motivates us to cook more features!</b>
+  <b>⭐ Star us on GitHub and motivate us to cook more features!</b>
 </div>
 
----
 
 ## 🗞️ News
 
-> - **\[04/2026\]** 🎉 OpenCook **v1.0** is live — the first project-specific personalization layer purpose-built for coding agents. Built-in recipe library **`open-cookbook/`** released. Community recipes are welcome!
+> - **\[04/2026\]** 🎉 OpenCook **v1.0** is live, the first project-specific personalization layer purpose-built for coding agents. Built-in recipe library **`open-cookbook/`** released. Community recipes are welcome!
 
----
+
 
 ## ✨ Introduction
 
-Coding agents are powerful but generic. They can navigate your codebase, but they struggle to **deeply** personalize it — injecting a production-ready feature that respects internal conventions, passes the build system, clears regression tests, and ships as a mergeable patch, all without hand-holding.
+Coding agents are powerful but generic. They can navigate your codebase, but they struggle to **deeply** personalize it: injecting a production-ready feature that respects internal conventions, passes the build system, clears regression tests, and ships as a mergeable patch, all without hand-holding.
 
-**OpenCook is the missing layer.** It wraps any coding agent with project-local **Recipes**, **Rules**, and **Memory** — giving it the deep project context needed to autonomously deliver precise, production-grade personalizations.
+**OpenCook is the missing layer.** It wraps any coding agent with three project-local primitives:
 
-> **Why database functions as the reference case?**  
-> Implementing a function at C/C++ source level inside a production database — respecting its memory model, type system, and build infrastructure — is one of the hardest personalization tasks imaginable.
+- **Recipes**: step-by-step domain guides that teach the agent *exactly* how to implement a feature in your specific codebase
+- **Rules**: per-project constraint files that encode conventions, style, and invariants the agent must respect
+- **Memory**: a 4-layer stack (Working → Episodic → Project → Long-Term) that keeps the agent coherent across long sessions
 
----
+### Why OpenCook?
+
+Generic coding agents (Claude Code, Codex, OpenCode) treat every project the same. Personalization demands more. OpenCook addresses five requirements they leave unmet:
+
+| What personalization requires | Claude Code / Codex / OpenCode | OpenCook |
+|---|---|---|
+| **Know your project's rules** | Agent re-infers conventions and entry points from scratch each session | Recipes + Rules encode exact conventions, registration patterns, and constraints, all injected before the first line is written |
+| **Know precisely what to change** | Edits broadly, often missing required dependencies or touching unrelated code | PlanAgent scopes exactly which files and entry points need to change before coding begins |
+| **Verify the result fits** | Generates code and stops; you compile and test manually | Plan → Code → Test loop runs until the patch compiles and all tests pass; the session does not end until the change works |
+| **Remember what it learned** | Context resets each run; the same project knowledge is re-explained every time | 4-layer persistent memory retains decisions and discoveries across sessions, so the agent improves with each run |
+| **Produce a mergeable artifact** | Output is a chat response; turning it into a commit requires manual work | Every run produces a file diff, a trajectory record, and a structured report, ready to review and merge |
+
+
+For a full feature-by-feature breakdown, see [Comparison](#-comparison).
+
+
 
 ## 🎬 Demo
 
 <div align="center">
-  <i>👇 Full walkthrough video — <a href="https://vimeo.com/1178451557" target="_blank">watch on Vimeo</a></i>
+  <i> 👉 Full walkthrough video: <a href="https://vimeo.com/1178451557" target="_blank">watch on Vimeo</a></i>
 </div>
 
 <br/>
 
-A live session personalizing SQLite with a new scalar function:
-
 [![CLI Overview](./opencook-preview.png)](https://vimeo.com/1178451557)
 
----
+
 
 ## 🕹 Quick Start
 
 **Prerequisites:** Python 3.10+, an LLM API key, and the source tree of your target project.
 
-### Step 1 — Install
+### Step 1: Install
 
 ```bash
 git clone https://github.com/weAIDB/OpenCook.git && cd OpenCook
-conda create -n opencook python=3.10 -y && conda activate opencook
-pip install -e .
+uv venv --python 3.10 && source .venv/bin/activate
+uv pip install -e .
 ```
+
+> **Windows:** use `.venv\Scripts\activate` instead of `source .venv/bin/activate`.
 
 This installs OpenCook and its runtime dependencies, then exposes the
 `opencook` command for all CLI workflows.
 
-### Step 1.5 — Update After Local Changes
+### Step 2: Update After Local Changes
 
 OpenCook is a pure Python CLI project. In most day-to-day development, you do **not**
- need to build a wheel manually.
+need to rebuild or reinstall.
 
 **When you do NOT need to reinstall**
 
@@ -109,38 +126,23 @@ opencook interactive --config-file opencook_config.yaml
 Reinstall with:
 
 ```bash
-pip install -e .
+uv pip install -e .
 ```
 
-If you want to force a clean reinstall:
+To force a clean reinstall:
 
 ```bash
-pip uninstall opencook -y
-pip install -e .
+uv pip uninstall opencook
+uv pip install -e .
 ```
 
-**How to verify the CLI is healthy**
-
-```bash
-opencook --help
-opencook run --help
-opencook interactive --help
-```
-
-If `opencook` is not found, check that your current Python environment is activated,
-then run:
-
-```bash
-python -m pip install -e .
-```
-
-As a fallback, the module entrypoint should also work:
+If `opencook` is not found after reinstalling, use the module entrypoint as a fallback:
 
 ```bash
 python -m code_agent --help
 ```
 
-### Step 2 — Configure
+### Step 3: Configure
 
 Use the bundled `opencook_config.yaml` as your starting point, or copy it before editing:
 
@@ -157,7 +159,7 @@ You can also point the CLI at a config file globally:
 export OPENCOOK_CONFIG_FILE=my_opencook_config.yaml
 ```
 
-### Step 3 — Cook
+### Step 4: Cook
 
 ```bash
 # Interactive TUI (recommended)
@@ -170,16 +172,15 @@ opencook run "Implement the BOOL_AND aggregate function for SQLite" --config-fil
 opencook interactive --database postgresql --config-file my_opencook_config.yaml
 ```
 
----
+
 
 ## 📚 Features
 
 <table>
 <tr>
 <td width="50%">
-
 **🧩 Project-Local Personalization**  
-Walk-up recipe roots and per-project rules. Every agent knows the local rules before writing a single line.
+Per-project recipe roots and rule files are auto-discovered and injected. Every agent knows the local conventions before writing a single line.
 
 </td>
 <td width="50%">
@@ -219,7 +220,7 @@ Every run emits a trajectory record, a file diff, and a structured report. Full 
 </tr>
 </table>
 
----
+
 
 ## 🏗️ How It Works
 
@@ -227,15 +228,18 @@ OpenCook runs a deterministic **Plan → Code → Test** pipeline through three 
 
 | Agent | Role | Key Behavior |
 |---|---|---|
-| **CodeAgent** | Orchestrator | Writes code, coordinates sub-agents, self-corrects on failure |
+| **CodeAgent** | Orchestrator | Writes code, coordinates subagents, self-corrects on failure |
 | **PlanAgent** | Read-only Scoper | Decomposes the task; locates files, entry points, and conventions |
 | **TestAgent** | Validator | Compiles, runs test suite, reports failures back to CodeAgent |
 
----
+
 
 ## 🗄️ Reference Case: Database Functions
 
-The reference benchmark — the domain hardest to automate correctly, and thus the strongest proof of the personalization thesis.
+> **Why database functions?**  
+> Implementing a C/C++ function inside a production database, subject to its memory model, type system, and build infrastructure, is one of the hardest personalization tasks imaginable. It is the strongest proof that the approach works.
+
+The table below shows where each database's extension entry points live:
 
 | Database | Language | Entry Point |
 |---|---|---|
@@ -246,7 +250,7 @@ The reference benchmark — the domain hardest to automate correctly, and thus t
 
 > The same Plan → Code → Test loop applies to any codebase domain. Database engines are just the hardest kitchen to cook in.
 
----
+
 
 ## 🔌 Compatibility
 
@@ -270,17 +274,17 @@ The reference benchmark — the domain hardest to automate correctly, and thus t
 | DeepSeek | DeepSeek-V3, DeepSeek-Coder |
 | Zhipu / Qwen / DouBao | GLM-5, Qwen3-Coder |
 | Azure / OpenRouter | Any deployed endpoint |
-| Ollama | Any local model — fully offline |
+| Ollama | Any local model (fully offline) |
 
 Each agent role (Plan / Code / Test) can use a **different model and provider** independently.
 
----
+
 
 ## 🔪 Extend OpenCook
 
 ### Write a Recipe
 
-Recipe packages are currently discovered from `.opencook/skills/` and use `SKILL.md` as the entry file:
+OpenCook ships a built-in recipe library at `open-cookbook/` in the repository root. User-created recipes go in `.opencook/skills/` inside your project directory and are auto-discovered at runtime. Both locations use `SKILL.md` as the entry file:
 
 ```
 .opencook/skills/
@@ -309,39 +313,39 @@ triggers: [implement X, add X feature]
 
 | Step | What to implement |
 |---|---|
-| 1 | **Template** — code scaffolding for the target language/framework |
-| 2 | **Test harness** — domain-specific build and execution runner |
-| 3 | **Extraction utils** — symbol/schema extraction helpers |
-| 4 | **Recipes** — domain knowledge in `SKILL.md` recipe packages |
+| 1 | **Template**: code scaffolding for the target language/framework |
+| 2 | **Test harness**: domain-specific build and execution runner |
+| 3 | **Extraction utils**: symbol/schema extraction helpers |
+| 4 | **Recipes**: domain knowledge in `SKILL.md` recipe packages |
 
 ### Add an LLM provider
 
 Implement `BaseClient` in `code_agent/utils/llm_clients/` and register it in `LLMClient`. No other changes needed.
 
----
+
 
 ## 🆚 Comparison
 
-How OpenCook stands apart on the surfaces that matter most to its personalization thesis.
+How OpenCook compares on each of the five personalization requirements covered above.
 
-| Surface | **OpenCook** | Claude Code | Codex | OpenCode | OpenClaw |
+| Feature | **OpenCook** | Claude Code | Codex | OpenCode | OpenClaw |
 |---|:---:|:---:|:---:|:---:|:---:|
-| Project-Local Personalization Path | ✦ | ✦ | ~ | ✦ | ✦ |
-| Built-In Delivery Loop (Plan→Code→Test) | ✦ | ~ | ~ | ~ | ~ |
-| Explicit Multi-Layer Memory | ✦ | ~ | ~ | ~ | ~ |
-| Patch-Oriented Traceability | ✦ | ~ | ~ | ~ | ~ |
-| In-Tree Domain Scaffolding | ✦ | ✗ | ✗ | ✗ | ✗ |
+| Project rules injection | ✦ | ✦ | ~ | ✦ | ✦ |
+| Targeted change scoping | ✦ | ~ | ~ | ~ | ~ |
+| Built-in delivery loop (Plan→Code→Test) | ✦ | ~ | ~ | ~ | ~ |
+| Persistent multi-layer memory | ✦ | ~ | ~ | ~ | ~ |
+| Structured patch output | ✦ | ~ | ~ | ~ | ~ |
 
-<sub>✦ Clearly present &nbsp; ~ Present but narrower &nbsp; ✗ Not observed in inspected source</sub>
+<sub>✦ Clearly present &nbsp; ~ Present but narrower or less structured &nbsp; ✗ Not observed in inspected source</sub>
 
----
+
 
 ## 🤔 FAQ
 
 <details>
 <summary><b>Is OpenCook only for databases?</b></summary>
 <br/>
-No. Database function implementation is the reference benchmark — it demands deep C/C++ internals knowledge, making it the hardest test of our personalization thesis. The Plan → Code → Test loop and recipe system are fully domain-agnostic. We are actively expanding to other codebase domains.
+No. Database function implementation is the reference benchmark because it demands deep C/C++ internals knowledge, making it the hardest test of our personalization thesis. The Plan → Code → Test loop and recipe system are fully domain-agnostic. We are actively expanding to other codebase domains.
 </details>
 
 <details>
@@ -362,42 +366,45 @@ For complex C/C++ internals: Claude Sonnet/Opus and GPT-4o class models. For cos
 TestAgent captures compiler output and test failures as structured tool results and feeds them back to CodeAgent. CodeAgent patches iteratively until all checks pass or the step budget is exhausted.
 </details>
 
----
 
 ## 📋 Roadmap
 
-- [ ] **Open Benchmark** — public leaderboard of personalization tasks across databases and domains
-- [ ] **Broader Domain Support** — kernel modules, language runtimes, compiler backends
-- [ ] **Parallel Cooking** — concurrent PlanAgent/TestAgent pairs for batch personalization
-- [ ] **Web UI** — browser-based session dashboard
-- [ ] **Fine-Tuned Models** — domain-specific models trained on successful trajectories
-- [ ] **MCP Server** — expose the recipe + memory system as an MCP endpoint for any agent
+- [ ] **Open Benchmark**: public leaderboard of personalization tasks across databases and domains
+- [ ] **Broader Domain Support**: kernel modules, language runtimes, compiler backends
+- [ ] **Parallel Cooking**: concurrent PlanAgent/TestAgent pairs for batch personalization
+- [ ] **Web UI**: browser-based session dashboard
+- [ ] **Fine-Tuned Models**: domain-specific models trained on successful trajectories
+- [ ] **MCP Server**: expose the recipe + memory system as an MCP endpoint for any agent
 
----
+
 
 ## 👫 Community
 
-We welcome contributions of all kinds — new recipes, domain backends, LLM clients, bug reports, and ideas.
+We welcome contributions of all kinds: new recipes, domain backends, LLM clients, bug reports, and ideas.
 
 - **GitHub**: [github.com/weAIDB/OpenCook](https://github.com/weAIDB/OpenCook)
 - **Issues / PRs**: open an issue or pull request
 - **Discussions**: [GitHub Discussions](https://github.com/weAIDB/OpenCook/discussions)
 
----
+
 
 ## 📒 Citation
 
 ```bibtex
-@misc{opencook2026,
-  author       = {Wei Zhou and others},
-  title        = {OpenCook: Project-Specific Personalization for Coding Agents},
-  year         = {2026},
-  howpublished = {\url{https://github.com/weAIDB/OpenCook}}
+@article{zhou2026dbcooker,
+  author       = {Wei Zhou and Xuanhe Zhou and Qikang He and Guoliang Li and Bingsheng He and Quanqing Xu and Fan Wu},
+  title        = {Automating
+Database-Native Function Code Synthesis with LLMs},
+  journal      = {Proc. {ACM} Manag. Data},
+  volume       = {3},
+  number       = {4},
+  pages        = {141:1--141:26},
+  year         = {2026}
 }
 ```
 
----
+
 
 ## 📝 License
 
-MIT License — see [LICENSE](LICENSE) for details.
+MIT License. See [LICENSE](LICENSE) for details.
