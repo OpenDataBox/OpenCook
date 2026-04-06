@@ -1,5 +1,4 @@
 <div align="center">
-  <img src="./data/images/opencook_logo.png" width="140px" alt="OpenCook Logo"/><br/>
   <h1>OpenCook</h1>
   <p><b>Project-Specific Personalization for Coding Agents</b></p>
   <p><i>Start with a generic project. End with a perfectly tailored solution.</i></p>
