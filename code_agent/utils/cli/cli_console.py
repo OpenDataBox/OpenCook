@@ -77,7 +77,7 @@ class ConsoleStep:
 class CLIConsole(ABC):
     """Base class for CLI console implementations."""
 
-    def __init__(self, mode: ConsoleMode = ConsoleMode.RUN):
+    def __init__(self, mode: ConsoleMode = ConsoleMode.RUN, display_level: str = "log"):
         """Initialize the CLI console.
 
         Args:
@@ -86,6 +86,26 @@ class CLIConsole(ABC):
         self.mode: ConsoleMode = mode
         self.console_step_history: dict[int, ConsoleStep] = {}
         self.agent_execution: AgentExecution | None = None
+        self.display_level: str = str(display_level or "log").lower()
+
+    def set_display_level(self, display_level: str) -> None:
+        level = str(display_level or "log").lower()
+        if level not in ("log", "debug"):
+            level = "log"
+        self.display_level = level
+
+    @property
+    def is_debug(self) -> bool:
+        return self.display_level == "debug"
+
+    def debug_step(
+        self,
+        agent_step: AgentStep,
+        agent_execution: AgentExecution | None = None,
+        *,
+        agent_type: str | None = None,
+    ) -> None:
+        return
 
     # ── Legacy turn-level interface (kept for batch / non-interactive paths) ──
 
