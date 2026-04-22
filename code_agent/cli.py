@@ -85,6 +85,13 @@ def cli():
     help="Type of console to use (simple or rich)",
 )
 @click.option(
+    "--display-level",
+    "-dl",
+    default="log",
+    type=click.Choice(["log", "debug"], case_sensitive=False),
+    help="Display verbosity: log (default) or debug (per-step debug panels)",
+)
+@click.option(
     "--agent-type", "-at",
     type=click.Choice(["code_agent", "plan_agent", "test_agent"], case_sensitive=False),
     help="Type of agent to use", default="code_agent",
@@ -92,7 +99,7 @@ def cli():
 def run_command(
         task, file_path, provider, model, model_base_url, api_key, max_steps,
         working_dir, must_patch, config_file, trajectory_file, patch_path,
-        console_type, agent_type,
+        console_type, display_level, agent_type,
 ):
     """Run a task using the agent (CLI entry point)."""
     is_success, _, _ = run(
@@ -101,6 +108,7 @@ def run_command(
         api_key=api_key, max_steps=max_steps, working_dir=working_dir,
         must_patch=must_patch, config_file=config_file,
         trajectory_file=trajectory_file, console_type=console_type,
+        display_level=display_level,
         agent_type=agent_type,
     )
     if not is_success:
@@ -121,6 +129,7 @@ def run(
         config_file: str = "opencook_config.yaml",
         trajectory_file: str | None = None,
         console_type: str | None = "simple",
+        display_level: str = "log",
         agent_type: str | None = "code_agent",
 ):
     """
@@ -190,6 +199,8 @@ def run(
         cli_console = ConsoleFactory.create_console(
             console_type=selected_console_type, mode=console_mode
         )
+        if hasattr(cli_console, "set_display_level"):
+            cli_console.set_display_level(display_level)
 
         # For rich console in RUN mode, set the initial task
         if (selected_console_type is not None and selected_console_type
@@ -324,6 +335,13 @@ def _has_recent_session(store: "SessionStore") -> bool:
     default="auto",
     help="Console type: auto (default) | textual | chat | simple",
 )
+@click.option(
+    "--display-level",
+    "-dl",
+    default="log",
+    type=click.Choice(["log", "debug"], case_sensitive=False),
+    help="Display verbosity: log (default) or debug (per-step debug panels)",
+)
 def interactive(
         session_id: str | None = None,
         force_new: bool = False,
@@ -337,6 +355,7 @@ def interactive(
         config_file: str = "opencook_config.yaml",
         max_steps: int | None = None,
         console_type: str = "auto",
+        display_level: str = "log",
 ):
     """Start an interactive session with OpenCook."""
     import hashlib
@@ -405,6 +424,8 @@ def interactive(
     cli_console = ConsoleFactory.create_interactive_console(
         console_type=console_type.lower(),
     )
+    if hasattr(cli_console, "set_display_level"):
+        cli_console.set_display_level(display_level)
 
     runner = SessionRunner(
         config=config,

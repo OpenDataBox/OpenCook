@@ -14,6 +14,8 @@ import subprocess
 import time
 import contextlib
 from abc import ABC, abstractmethod
+from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +81,7 @@ class BaseAgent(ABC):
         self._tool_caller = ToolExecutor(self._tools)
 
         self._cli_console: CLIConsole | None = None
+        self._history_path: Path | None = None
 
         # Cancellation support for run_in_executor LLM calls.
         # Using a private executor (not the default) means asyncio.run() shutdown
@@ -519,10 +522,153 @@ class BaseAgent(ABC):
     async def _finalize_step(
             self, step: "AgentStep", messages: list["LLMMessage"], execution: "AgentExecution"
     ) -> None:
-        step.state = AgentStepState.COMPLETED
+        if step.state != AgentStepState.ERROR:
+            step.state = AgentStepState.COMPLETED
+        if messages is not None:
+            dumped: list[dict[str, object]] = []
+            for m in messages:
+                item: dict[str, object] = {"role": m.role}
+                if m.content:
+                    item["content"] = m.content
+                if m.tool_call is not None:
+                    tc = m.tool_call
+                    item["tool_call"] = {
+                        "name": tc.name,
+                        "call_id": tc.call_id,
+                        "arguments": tc.arguments,
+                    }
+                if m.tool_result is not None:
+                    tr = m.tool_result
+                    item["tool_result"] = {
+                        "name": tr.name,
+                        "call_id": tr.call_id,
+                        "success": tr.success,
+                        "result": tr.result,
+                        "error": tr.error,
+                    }
+                dumped.append(item)
+            step.extra = dict(step.extra or {})
+            step.extra["next_messages"] = dumped
         self._record_handler(step, messages)
+        self._append_step_history(step=step, execution=execution)
         self._update_cli_console(step, execution)
+        if self.cli_console:
+            try:
+                self.cli_console.debug_step(step, execution, agent_type=self.agent_type)
+            except Exception:
+                pass
         execution.steps.append(step)
+
+    def _get_history_path(self) -> Path:
+        if self._history_path is not None:
+            return self._history_path
+
+        history_dir = Path(__file__).resolve().parents[1] / "history"
+        history_dir.mkdir(parents=True, exist_ok=True)
+
+        base = datetime.now().strftime("%Y%m%d_%H%M%S")
+        try:
+            if self._trajectory_recorder and hasattr(self._trajectory_recorder, "trajectory_path"):
+                base = str(getattr(self._trajectory_recorder, "trajectory_path").stem) or base
+        except Exception:
+            pass
+
+        pid = os.getpid()
+        self._history_path = (history_dir / f"{base}__{self.agent_type}__{pid}.jsonl").resolve()
+        return self._history_path
+
+    def _append_step_history(self, *, step: AgentStep, execution: AgentExecution) -> None:
+        try:
+            lr = step.llm_response
+            tool_calls = step.tool_calls or (lr.tool_calls if lr else None) or []
+            tool_results = step.tool_results or []
+            display_level = getattr(self._cli_console, "display_level", "log") if self._cli_console else "log"
+
+            info = {
+                "state": getattr(step.state, "value", str(step.state)),
+                "finish_reason": getattr(lr, "finish_reason", None) if lr else None,
+                "tool_calls": [tc.name for tc in tool_calls],
+                "tool_results": [{"name": tr.name, "success": tr.success} for tr in tool_results],
+                "execution_success": execution.success,
+                "agent_state": getattr(execution.agent_state, "value", str(execution.agent_state)),
+            }
+
+            debug = {
+                "thought": step.thought,
+                "llm_response": (
+                    {
+                        "content": lr.content,
+                        "model": lr.model,
+                        "finish_reason": lr.finish_reason,
+                        "usage": (
+                            {
+                                "input_tokens": lr.usage.input_tokens,
+                                "output_tokens": lr.usage.output_tokens,
+                                "cache_creation_input_tokens": lr.usage.cache_creation_input_tokens,
+                                "cache_read_input_tokens": lr.usage.cache_read_input_tokens,
+                                "reasoning_tokens": lr.usage.reasoning_tokens,
+                            }
+                            if lr.usage
+                            else None
+                        ),
+                        "tool_calls": (
+                            [
+                                {
+                                    "name": tc.name,
+                                    "call_id": tc.call_id,
+                                    "arguments": tc.arguments,
+                                    "id": getattr(tc, "id", None),
+                                }
+                                for tc in (lr.tool_calls or [])
+                            ]
+                            if lr.tool_calls is not None
+                            else None
+                        ),
+                    }
+                    if lr
+                    else None
+                ),
+                "tool_calls": [
+                    {
+                        "name": tc.name,
+                        "call_id": tc.call_id,
+                        "arguments": tc.arguments,
+                        "id": getattr(tc, "id", None),
+                    }
+                    for tc in tool_calls
+                ],
+                "tool_results": [
+                    {
+                        "name": tr.name,
+                        "call_id": tr.call_id,
+                        "success": tr.success,
+                        "result": tr.result,
+                        "error": tr.error,
+                        "id": getattr(tr, "id", None),
+                    }
+                    for tr in tool_results
+                ],
+                "reflection": step.reflection,
+                "error": step.error,
+                "next_messages": (step.extra or {}).get("next_messages") if isinstance(step.extra, dict) else None,
+            }
+
+            record = {
+                "ts": datetime.now().isoformat(),
+                "level": display_level,
+                "agent_type": self.agent_type,
+                "task_kind": (self._task or {}).get("task_kind") if isinstance(self._task, dict) else None,
+                "project_path": (self._extra_args or {}).get("project_path"),
+                "step_number": step.step_number,
+                "info": info,
+                "debug": debug,
+            }
+
+            path = self._get_history_path()
+            with open(path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record, ensure_ascii=False) + "\n")
+        except Exception:
+            return
 
     def reflect_on_result(self, tool_results: list[ToolResult]) -> str | None:
         """Reflect on tool execution result. Override for custom reflection logic."""

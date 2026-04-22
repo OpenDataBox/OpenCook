@@ -1711,6 +1711,109 @@ class TextualConsole(CLIConsole):
     def print(self, message: str, color: str = "blue", bold: bool = False) -> None:
         self._write(self._build_message_text(message, color=color, bold=bold), plain=message[:80])
 
+    def debug_step(
+        self,
+        agent_step: AgentStep,
+        agent_execution: AgentExecution | None = None,
+        *,
+        agent_type: str | None = None,
+    ) -> None:
+        if not self.is_debug:
+            return
+
+        import json
+
+        def _clip(text: str, limit: int = 1400) -> str:
+            t = (text or "").strip()
+            return t if len(t) <= limit else (t[: limit - 1] + "…")
+
+        def _pretty(value) -> str:
+            if value is None:
+                return ""
+            if isinstance(value, (dict, list)):
+                return json.dumps(value, ensure_ascii=False, indent=2)
+            return str(value)
+
+        lr = agent_step.llm_response
+        usage = lr.usage if lr else None
+        tool_calls = agent_step.tool_calls or (lr.tool_calls if lr else None) or []
+        tool_results = agent_step.tool_results or []
+
+        head = f"DEBUG Step {agent_step.step_number}"
+        if agent_type:
+            head += f" • {agent_type}"
+        lines = [head]
+        lines.append(f"state: {getattr(agent_step.state, 'value', str(agent_step.state))}")
+        if lr and lr.model:
+            lines.append(f"model: {lr.model}")
+        if lr and lr.finish_reason:
+            lines.append(f"finish: {lr.finish_reason}")
+        if usage:
+            lines.append(
+                "tokens: "
+                f"in={usage.input_tokens} out={usage.output_tokens} "
+                f"cache_write={usage.cache_creation_input_tokens} cache_read={usage.cache_read_input_tokens} "
+                f"reasoning={usage.reasoning_tokens}"
+            )
+        if agent_step.thought and agent_step.thought.strip():
+            lines.append("thought:")
+            for ln in _clip(agent_step.thought, limit=1800).splitlines()[:60]:
+                lines.append("  " + ln)
+        if lr and (lr.content or "").strip():
+            lines.append("llm_output:")
+            for ln in _clip(lr.content, limit=1800).splitlines()[:60]:
+                lines.append("  " + ln)
+        if tool_calls:
+            lines.append("tool_calls:")
+            for i, tc in enumerate(tool_calls, start=1):
+                args = _clip(_pretty(tc.arguments), limit=900)
+                lines.append(f"  {i}. {tc.name}  ({tc.call_id})")
+                if args:
+                    for ln in args.splitlines()[:30]:
+                        lines.append("     " + ln)
+        if tool_results:
+            lines.append("tool_results:")
+            for i, tr in enumerate(tool_results, start=1):
+                payload = tr.result if tr.success else (tr.error or tr.result or "")
+                payload = _clip(payload, limit=900)
+                ok = "OK" if tr.success else "FAIL"
+                lines.append(f"  {i}. {tr.name}  ({tr.call_id})  {ok}")
+                if payload:
+                    for ln in payload.splitlines()[:30]:
+                        lines.append("     " + ln)
+        next_messages = None
+        if isinstance(agent_step.extra, dict):
+            next_messages = agent_step.extra.get("next_messages")
+        if isinstance(next_messages, list) and next_messages:
+            lines.append("next_messages:")
+            for i, m in enumerate(next_messages, start=1):
+                if not isinstance(m, dict):
+                    lines.append(f"  {i}. {str(m)}")
+                    continue
+                role = str(m.get("role", ""))
+                if "tool_result" in m:
+                    lines.append(f"  {i}. {role}  tool_result")
+                    payload = _clip(_pretty(m.get('tool_result')), limit=900)
+                elif "tool_call" in m:
+                    lines.append(f"  {i}. {role}  tool_call")
+                    payload = _clip(_pretty(m.get('tool_call')), limit=900)
+                else:
+                    lines.append(f"  {i}. {role}  content")
+                    payload = _clip(str(m.get("content", "") or ""), limit=900)
+                if payload:
+                    for ln in payload.splitlines()[:30]:
+                        lines.append("     " + ln)
+        if agent_step.reflection:
+            lines.append("reflection:")
+            for ln in _clip(agent_step.reflection, limit=1200).splitlines()[:40]:
+                lines.append("  " + ln)
+        if agent_step.error:
+            lines.append("step_error:")
+            for ln in _clip(agent_step.error, limit=1200).splitlines()[:40]:
+                lines.append("  " + ln)
+
+        self.print("\n".join(lines), color="magenta", bold=False)
+
     def clear_live_status(self) -> None:
         self._spinning = False
         self._current_state = None

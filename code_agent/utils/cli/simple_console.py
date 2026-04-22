@@ -1,10 +1,11 @@
-﻿# Copyright (c) 2025-2026 weAIDB
+# Copyright (c) 2025-2026 weAIDB
 # OpenCook: Start with a generic project. End with a perfectly tailored solution.
 # SPDX-License-Identifier: MIT
 
 """Simple CLI Console — DBCooker banner + live spinner + OpenCode-style step panels."""
 
 import asyncio
+import json
 import shutil
 import sys
 try:
@@ -18,6 +19,7 @@ from rich.markdown import Markdown
 from rich.markup import escape
 from rich.panel import Panel
 from rich.table import Table
+from rich.text import Text
 
 from code_agent.agent.agent_basics import AgentExecution, AgentState, AgentStep, AgentStepState
 from code_agent.utils.cli.cli_console import (
@@ -123,7 +125,7 @@ class SimpleCLIConsole(CLIConsole):
         mode: ConsoleMode = ConsoleMode.RUN,
     ):
         super().__init__(mode)
-        self.console: Console = Console()
+        self.console: Console = Console(encoding="utf-8")
         _enable_vt_on_windows()
         self._is_tty: bool = sys.stdout.isatty()
         self._term_width: int = shutil.get_terminal_size((80, 24)).columns
@@ -384,6 +386,186 @@ class SimpleCLIConsole(CLIConsole):
         safe = f"[bold]{safe}[/bold]" if bold else safe
         safe = f"[{color}]{safe}[/{color}]"
         self.console.print(safe)
+
+    def debug_step(
+        self,
+        agent_step: AgentStep,
+        agent_execution: AgentExecution | None = None,
+        *,
+        agent_type: str | None = None,
+    ) -> None:
+        if not self.is_debug:
+            return
+
+        def _clip(text: str, limit: int = 1400) -> str:
+            t = (text or "").strip()
+            return t if len(t) <= limit else (t[: limit - 1] + "…")
+
+        def _pretty(value) -> str:
+            if value is None:
+                return ""
+            if isinstance(value, (dict, list)):
+                return json.dumps(value, ensure_ascii=False, indent=2)
+            return str(value)
+
+        self._clear_status()
+        title = f"[bold magenta]DEBUG[/bold magenta]  Step {agent_step.step_number}"
+        if agent_type:
+            title += f"  •  {escape(agent_type)}"
+
+        lr = agent_step.llm_response
+        usage = lr.usage if lr else None
+        tool_calls = agent_step.tool_calls or (lr.tool_calls if lr else None) or []
+        tool_results = agent_step.tool_results or []
+
+        meta = Table(show_header=False, expand=True, pad_edge=False)
+        meta.add_column(style="dim", width=16)
+        meta.add_column()
+        meta.add_row("State", escape(getattr(agent_step.state, "value", str(agent_step.state))))
+        if lr and lr.model:
+            meta.add_row("Model", escape(lr.model))
+        if lr and lr.finish_reason:
+            meta.add_row("Finish", escape(lr.finish_reason))
+        if usage:
+            meta.add_row(
+                "Tokens",
+                escape(
+                    f"in={usage.input_tokens} out={usage.output_tokens}"
+                    f" cache_write={usage.cache_creation_input_tokens} cache_read={usage.cache_read_input_tokens}"
+                    f" reasoning={usage.reasoning_tokens}"
+                ),
+            )
+
+        layout = Table.grid(expand=True)
+        layout.add_row(meta)
+
+        if agent_step.thought and agent_step.thought.strip():
+            layout.add_row(
+                Panel(
+                    Text(_clip(agent_step.thought, limit=1800), overflow="fold"),
+                    title="[dim]Thought[/dim]",
+                    border_style="bright_black",
+                )
+            )
+
+        if lr and (lr.content or "").strip():
+            layout.add_row(
+                Panel(
+                    Text(_clip(lr.content, limit=1800), overflow="fold"),
+                    title="[dim]LLM Output[/dim]",
+                    border_style="bright_black",
+                )
+            )
+
+        if tool_calls:
+            tc_table = Table(show_header=True, expand=True)
+            tc_table.add_column("#", style="dim", width=3, justify="right")
+            tc_table.add_column("Tool", style="cyan", width=22, overflow="fold")
+            tc_table.add_column("Call ID", style="dim", width=18, overflow="fold")
+            tc_table.add_column("Arguments", overflow="fold")
+            for i, tc in enumerate(tool_calls, start=1):
+                tc_table.add_row(
+                    str(i),
+                    escape(tc.name),
+                    escape(tc.call_id),
+                    escape(_clip(_pretty(tc.arguments), limit=900)),
+                )
+            layout.add_row(
+                Panel(tc_table, title="[dim]Tool Calls[/dim]", border_style="bright_black")
+            )
+
+        if tool_results:
+            tr_table = Table(show_header=True, expand=True)
+            tr_table.add_column("#", style="dim", width=3, justify="right")
+            tr_table.add_column("Tool", style="cyan", width=22, overflow="fold")
+            tr_table.add_column("Call ID", style="dim", width=18, overflow="fold")
+            tr_table.add_column("OK", style="dim", width=4, justify="center")
+            tr_table.add_column("Result / Error", overflow="fold")
+            for i, tr in enumerate(tool_results, start=1):
+                payload = tr.result if tr.success else (tr.error or tr.result or "")
+                tr_table.add_row(
+                    str(i),
+                    escape(tr.name),
+                    escape(tr.call_id),
+                    "Y" if tr.success else "N",
+                    escape(_clip(payload, limit=900)),
+                )
+            layout.add_row(
+                Panel(tr_table, title="[dim]Tool Results[/dim]", border_style="bright_black")
+            )
+
+        next_messages = None
+        if isinstance(agent_step.extra, dict):
+            next_messages = agent_step.extra.get("next_messages")
+        if isinstance(next_messages, list) and next_messages:
+            nm_table = Table(show_header=True, expand=True)
+            nm_table.add_column("#", style="dim", width=3, justify="right")
+            nm_table.add_column("Role", style="dim", width=10)
+            nm_table.add_column("Type", style="dim", width=12)
+            nm_table.add_column("Content", overflow="fold")
+            for i, m in enumerate(next_messages, start=1):
+                role = str(m.get("role", "")) if isinstance(m, dict) else ""
+                kind = ""
+                payload = ""
+                if isinstance(m, dict) and "tool_result" in m:
+                    kind = "tool_result"
+                    tr = m.get("tool_result") or {}
+                    if isinstance(tr, dict):
+                        payload = _pretty(tr)
+                    else:
+                        payload = str(tr)
+                elif isinstance(m, dict) and "tool_call" in m:
+                    kind = "tool_call"
+                    tc = m.get("tool_call") or {}
+                    if isinstance(tc, dict):
+                        payload = _pretty(tc)
+                    else:
+                        payload = str(tc)
+                else:
+                    kind = "content"
+                    if isinstance(m, dict):
+                        payload = str(m.get("content", "") or "")
+                    else:
+                        payload = str(m)
+                nm_table.add_row(
+                    str(i),
+                    escape(_clip(role, limit=60)),
+                    escape(_clip(kind, limit=60)),
+                    escape(_clip(payload, limit=1200)),
+                )
+            layout.add_row(
+                Panel(
+                    nm_table,
+                    title="[dim]Next Messages[/dim]",
+                    border_style="bright_black",
+                )
+            )
+
+        if agent_step.reflection:
+            layout.add_row(
+                Panel(
+                    Text(_clip(agent_step.reflection, limit=1200), overflow="fold"),
+                    title="[dim]Reflection[/dim]",
+                    border_style="bright_black",
+                )
+            )
+
+        if agent_step.error:
+            layout.add_row(
+                Panel(
+                    Text(_clip(agent_step.error, limit=1200), overflow="fold"),
+                    title="[dim]Step Error[/dim]",
+                    border_style="red",
+                )
+            )
+
+        self.console.print(
+            Panel(
+                layout,
+                title=title,
+                border_style="magenta",
+            )
+        )
 
     @override
     def get_task_input(self) -> str | None:
