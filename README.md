@@ -1,7 +1,12 @@
 <div align="center">
-  <h1>OpenCook</h1>
-  <p><b>Project-Specific Personalization for Coding Agents</b></p>
-  <p><i>Start with a generic project. End with a perfectly tailored solution.</i></p>
+  <h1><img src="./OpenCook Logo.png" alt="OpenCook logo" width="120" align="middle" />&nbsp;OpenCook</h1>
+  <p><b>Project-Specific Personalization for Coding Agent Harness</b></p>
+  <p><i>"Start with a generic project. End with a perfectly tailored solution."</i></p>
+</div>
+
+<div align="center">
+  <b>English</b> &nbsp;|&nbsp; <a href="./README_ZH.md">简体中文</a>
+  <br></br>
 </div>
 
 <div align="center">
@@ -15,30 +20,27 @@
 </div>
 
 <div align="center">
-
   <a href="#-news">News</a> &nbsp;•&nbsp;
   <a href="#-introduction">Introduction</a> &nbsp;•&nbsp;
+  <a href="#-features">Features</a> &nbsp;•&nbsp;
+  <a href="#-comparison">Comparison</a> &nbsp;•&nbsp;
   <a href="#-demo">Demo</a> &nbsp;•&nbsp;
   <a href="#-quick-start">Quick Start</a> &nbsp;•&nbsp;
-  <a href="#-how-it-works">How It Works</a> &nbsp;•&nbsp;
   <a href="#-extend-opencook">Extend</a> &nbsp;•&nbsp;
-  <a href="#-comparison">Comparison</a> &nbsp;•&nbsp;
   <a href="#-faq">FAQ</a> &nbsp;•&nbsp;
   <a href="#-citation">Citation</a>
-
 </div>
 
 <div align="center">
-  <b>English</b> &nbsp;|&nbsp; 简体中文
-  <br/><br/>
+  <br></br>
   <b>⭐ Star us on GitHub and motivate us to cook more features!</b>
 </div>
 
 
 ## 🗞️ News
 
-> - **\[04/2026\]** 🎉 OpenCook **v1.0** is live, the first project-specific personalization layer purpose-built for coding agents. Built-in recipe library **`open-cookbook/`** released. Community recipes are welcome!
-
+> - **\[04 / 2026\]**  **OpenCook v1.0** is live, the first project-specific personalization layer purpose-built for coding agents. The demo video can be found on [YouTube](https://www.youtube.com/watch?v=JmgN2mUS2Qk). We are currently working to prepare reusable coding recipes. Community contributions are welcome! 🔔 👫
+> - **\[02 / 2026\]:** Our paper "*Automating Database-Native Function Code Synthesis with LLMs*" has been accepted by [SIGMOD 2026](https://arxiv.org/abs/2604.06231)! 🎉 🎉 🎉
 
 
 ## ✨ Introduction
@@ -63,20 +65,79 @@ Generic coding agents (Claude Code, Codex, OpenCode) treat every project the sam
 | **Remember what it learned** | Context resets each run; the same project knowledge is re-explained every time | 4-layer persistent memory retains decisions and discoveries across sessions, so the agent improves with each run |
 | **Produce a mergeable artifact** | Output is a chat response; turning it into a commit requires manual work | Every run produces a file diff, a trajectory record, and a structured report, ready to review and merge |
 
+## 📚 Features
 
-For a full feature-by-feature breakdown, see [Comparison](#-comparison).
+<table>
+<tr>
 
+<td width="50%">
+
+**🧩 Project-Local Personalization**  
+Per-project recipe roots and rule files are auto-discovered and injected. Every agent knows the local conventions before writing a single line.
+
+</td>
+<td width="50%">
+
+**🔄 Built-in Delivery Loop**  
+Fixed Plan → Code → Test cycle with self-correcting subagents. Iterates until the patch compiles and tests pass.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**🧠 4-Layer Memory Stack**  
+Working → Episodic → Project → Long-Term. Agents stay coherent across hours-long personalization sessions.
+
+</td>
+<td>
+
+**📖 Dynamic Recipe System**  
+Drop a recipe package with a `SKILL.md` entry file anywhere on the discovery path. Auto-loaded at runtime, injected at the right agent stage.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**🔎 Context-Aware Injection**  
+Understands cross-unit dependencies and build conventions. Features land exactly where they belong.
+
+</td>
+<td>
+
+**📋 Patch-Oriented Traceability**  
+Every run emits a trajectory record, a file diff, and a structured report. Full reproducibility out of the box.
+
+</td>
+</tr>
+</table>
+
+## 🆚 Comparison
+
+How OpenCook compares on each of the five personalization requirements covered above.
+
+| Feature | **OpenCook** | Claude Code | Codex | OpenCode | OpenClaw |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Project rules injection | ✦ | ✦ | ~ | ✦ | ✦ |
+| Targeted change scoping | ✦ | ~ | ~ | ~ | ~ |
+| Built-in delivery loop (Plan→Code→Test) | ✦ | ~ | ~ | ~ | ~ |
+| Persistent multi-layer memory | ✦ | ~ | ~ | ~ | ~ |
+| Structured patch output | ✦ | ~ | ~ | ~ | ~ |
+
+<sub>✦ Clearly present &nbsp; ~ Present but narrower or less structured &nbsp; ✗ Not observed in inspected source</sub>
 
 
 ## 🎬 Demo
 
 <div align="center">
-  <i> 👉 Full walkthrough video: <a href="https://vimeo.com/1178451557" target="_blank">watch on Vimeo</a></i>
+  <i> 👉 Full walkthrough video: <a href="https://www.youtube.com/watch?v=JmgN2mUS2Qk" target="_blank">watch on YouTube!</a></i>
 </div>
+
 
 <br/>
 
-[![CLI Overview](./opencook-preview.png)](https://vimeo.com/1178451557)
+[![CLI Overview](./opencook-preview.png)](https://www.youtube.com/watch?v=JmgN2mUS2Qk)
 
 
 
@@ -170,55 +231,6 @@ opencook run "Implement the BOOL_AND aggregate function for SQLite" --config-fil
 # Start an interactive PostgreSQL session
 opencook interactive --database postgresql --config-file my_opencook_config.yaml
 ```
-
-
-
-## 📚 Features
-
-<table>
-<tr>
-<td width="50%">
-**🧩 Project-Local Personalization**  
-Per-project recipe roots and rule files are auto-discovered and injected. Every agent knows the local conventions before writing a single line.
-
-</td>
-<td width="50%">
-
-**🔄 Built-in Delivery Loop**  
-Fixed Plan → Code → Test cycle with self-correcting subagents. Iterates until the patch compiles and tests pass.
-
-</td>
-</tr>
-<tr>
-<td>
-
-**🧠 4-Layer Memory Stack**  
-Working → Episodic → Project → Long-Term. Agents stay coherent across hours-long personalization sessions.
-
-</td>
-<td>
-
-**📖 Dynamic Recipe System**  
-Drop a recipe package with a `SKILL.md` entry file anywhere on the discovery path. Auto-loaded at runtime, injected at the right agent stage.
-
-</td>
-</tr>
-<tr>
-<td>
-
-**🔎 Context-Aware Injection**  
-Understands cross-unit dependencies and build conventions. Features land exactly where they belong.
-
-</td>
-<td>
-
-**📋 Patch-Oriented Traceability**  
-Every run emits a trajectory record, a file diff, and a structured report. Full reproducibility out of the box.
-
-</td>
-</tr>
-</table>
-
 
 
 ## 🏗️ How It Works
@@ -322,23 +334,6 @@ triggers: [implement X, add X feature]
 Implement `BaseClient` in `code_agent/utils/llm_clients/` and register it in `LLMClient`. No other changes needed.
 
 
-
-## 🆚 Comparison
-
-How OpenCook compares on each of the five personalization requirements covered above.
-
-| Feature | **OpenCook** | Claude Code | Codex | OpenCode | OpenClaw |
-|---|:---:|:---:|:---:|:---:|:---:|
-| Project rules injection | ✦ | ✦ | ~ | ✦ | ✦ |
-| Targeted change scoping | ✦ | ~ | ~ | ~ | ~ |
-| Built-in delivery loop (Plan→Code→Test) | ✦ | ~ | ~ | ~ | ~ |
-| Persistent multi-layer memory | ✦ | ~ | ~ | ~ | ~ |
-| Structured patch output | ✦ | ~ | ~ | ~ | ~ |
-
-<sub>✦ Clearly present &nbsp; ~ Present but narrower or less structured &nbsp; ✗ Not observed in inspected source</sub>
-
-
-
 ## 🤔 FAQ
 
 <details>
@@ -381,10 +376,6 @@ TestAgent captures compiler output and test failures as structured tool results 
 
 We welcome contributions of all kinds: new recipes, domain backends, LLM clients, bug reports, and ideas.
 
-- **GitHub**: [github.com/weAIDB/OpenCook](https://github.com/weAIDB/OpenCook)
-- **Issues / PRs**: open an issue or pull request
-- **Discussions**: [GitHub Discussions](https://github.com/weAIDB/OpenCook/discussions)
-
 
 
 ## 📒 Citation
@@ -392,8 +383,7 @@ We welcome contributions of all kinds: new recipes, domain backends, LLM clients
 ```bibtex
 @article{zhou2026dbcooker,
   author       = {Wei Zhou and Xuanhe Zhou and Qikang He and Guoliang Li and Bingsheng He and Quanqing Xu and Fan Wu},
-  title        = {Automating
-Database-Native Function Code Synthesis with LLMs},
+  title        = {Automating Database-Native Function Code Synthesis with LLMs},
   journal      = {Proc. {ACM} Manag. Data},
   volume       = {3},
   number       = {4},
