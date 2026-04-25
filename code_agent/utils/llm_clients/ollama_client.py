@@ -7,6 +7,7 @@ Ollama API client wrapper with tool integration
 """
 
 import json
+import os
 import uuid
 try:
     from typing import override
@@ -15,7 +16,7 @@ except ImportError:
         return func
 
 import openai
-from ollama import chat as ollama_chat  # pyright: ignore[reportUnknownVariableType]
+from ollama import Client as OllamaSDKClient  # pyright: ignore[reportUnknownVariableType]
 from openai.types.responses import (
     FunctionToolParam,
     ResponseFunctionToolCallParam,
@@ -34,13 +35,22 @@ class OllamaClient(BaseLLMClient):
     def __init__(self, model_config: ModelConfig):
         super().__init__(model_config)
 
+        configured_base_url = (
+            model_config.model_provider.base_url
+            or os.getenv("OLLAMA_HOST")
+            or "http://localhost:11434"
+        )
+        # The OpenAI-compatible endpoint often uses /v1, while ollama.Client
+        # expects the service host root.
+        if configured_base_url.endswith("/v1"):
+            configured_base_url = configured_base_url[:-3]
+
         self.client: openai.OpenAI = openai.OpenAI(
             # by default ollama doesn't require any api key. It should set to be "ollama".
             api_key=self.api_key,
-            base_url=model_config.model_provider.base_url
-            if model_config.model_provider.base_url
-            else "http://localhost:11434/v1",
+            base_url=(configured_base_url.rstrip("/") + "/v1"),
         )
+        self.ollama_client = OllamaSDKClient(host=configured_base_url)
 
         self.message_history: ResponseInputParam = []
 
@@ -80,7 +90,7 @@ class OllamaClient(BaseLLMClient):
                 }
                 for tool in tool_schemas
             ]
-        return ollama_chat(
+        return self.ollama_client.chat(
             messages=self.message_history,
             model=model_config.model,
             tools=tools_param,

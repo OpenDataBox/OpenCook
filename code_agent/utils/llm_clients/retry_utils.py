@@ -21,6 +21,8 @@ def retry_with(
     max_retries: int = 3,
     cancel_event: threading.Event | None = None,
     should_retry: Callable[[Exception], bool] | None = None,
+    min_sleep: float = 3.0,
+    max_sleep: float = 30.0,
 ) -> Callable[..., T]:
     """Retry logic with randomized backoff.
 
@@ -54,9 +56,13 @@ def retry_with(
                 if should_retry is not None and not should_retry(e):
                     raise
 
-                sleep_time = random.randint(3, 30)
+                lo = float(min_sleep)
+                hi = float(max_sleep)
+                if hi < lo:
+                    lo, hi = hi, lo
+                sleep_time = random.uniform(lo, hi)
                 logger.warning(
-                    "%s API call failed: %s. Will sleep for %d seconds and retry.\n%s",
+                    "%s API call failed: %s. Will sleep for %.2f seconds and retry.\n%s",
                     provider_name, e, sleep_time, traceback.format_exc(),
                 )
                 deadline = time.monotonic() + sleep_time

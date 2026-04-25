@@ -80,9 +80,12 @@ class LLMClient:
 
                 self.client = OpenRouterClient(model_config)
             case LLMProvider.OLLAMA:
-                from .ollama_client import OllamaClient
+                # Use Ollama's OpenAI-compatible /v1/chat/completions endpoint so that:
+                # - tool calling follows the same code path as other compatible providers
+                # - requests are visible in Ollama server logs (HTTP)
+                from .openai_compat_client import OpenAICompatClient
 
-                self.client = OllamaClient(model_config)
+                self.client = OpenAICompatClient(model_config, self.provider.value)
             case (
                 LLMProvider.DOUBAO
                 | LLMProvider.DEEPSEEK
